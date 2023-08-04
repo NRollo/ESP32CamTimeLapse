@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "esp_log.h": "c",
+        "sdmmc_cmd.h": "c",
+        "freertos.h": "c",
+        "task.h": "c",
+        "esp_sleep.h": "c",
+        "esp_camera.h": "c",
+        "xclk.h": "c",
+        "cam_hal.h": "c",
+        "ll_cam.h": "c",
+        "ov5640_regs.h": "c",
+        "esp_timer.h": "c",
+        "uart.h": "c",
+        "gpio.h": "c",
+        "rtc_io_types.h": "c",
+        "ov5640.h": "c",
+        "sccb.h": "c",
+        "event_groups.h": "c"
+    }
+}
