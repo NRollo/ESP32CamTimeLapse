@@ -23,7 +23,7 @@ extern esp_sleep_source_t WakeUpCause;
 
 const char *VOLUME_NAME = "/sdcard";
 const uint32_t SD_OPERATION_DONE = ( 1UL << 0UL );
-RTC_DATA_ATTR int64_t num;
+RTC_DATA_ATTR uint64_t num;
 static sdmmc_card_t *card;
 static sdmmc_host_t host;
 
@@ -87,10 +87,10 @@ esp_err_t initi_sd_card(void)
 }
 
 /* Count the number of jpeg files on the SD card */
-u_int64_t NumFilesOnSDcard(void) {
+uint64_t NumFilesOnSDcard(void) {
     DIR *dir;
     struct dirent *dent;
-    u_int64_t fileNum = 0;
+    uint64_t fileNum = 0;
 
     // Open the '/sdcard/' dir and count the number of files having 'jpg' or 'JPG' in their filename
     dir = opendir("/sdcard/");   
@@ -159,7 +159,7 @@ esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem) {
         }
         else
         {   // Save the lighting information of this picture frame
-            fprintf(file, "Pic #: %lld Light: %d Sleep Time: %s\n", num, light1, rem);
+            fprintf(file, "Pic #: %lld Light: %d %s\n", num, light1, rem);
             fflush(file);
             fclose(file);
         }

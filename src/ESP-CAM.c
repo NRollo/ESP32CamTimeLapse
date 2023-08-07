@@ -14,7 +14,8 @@
 
 static const char *TAG = "Camera";
 const int16_t CAM_PIN_PWDN = 32;
-//#define CAM_PIN_PWDN    32 
+
+// CAM HW setup
 #define CAM_PIN_RESET   -1 //software reset will be performed
 #define CAM_PIN_XCLK    0
 #define CAM_PIN_SIOD    26
@@ -43,19 +44,21 @@ extern esp_sleep_source_t WakeUpCause;
 extern uint64_t sleep_time_sec;
 extern struct timeval now;
 
+// 8 hours deep sleep in uS
 const u_int64_t DEEP_SLEEP_8_HOUR = ((uint64_t) 8 * 60 * 60 * 1000000);
+// 1 hour deep sleep in uS
 const u_int64_t DEEP_SLEEP_1_HOUR = ((uint64_t) 1 * 60 * 60 * 1000000);
-//const u_int64_t DEEP_SLEEP_8_HOUR = ((uint64_t) 8 * 1000000);
-//const u_int64_t DEEP_SLEEP_1_HOUR = ((uint64_t) 1 * 1000000);
-
-// 15 min. deep sleep between wakeup in uS (15 x 60 x 1.000.000)
+// 15 min. deep sleep in uS
 const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 15 * 60 * 1000000);
-//const u_int64_t SLEEP_TIME_IN_USEC = (15 * 1000000);
+// CAM event bit
 const uint32_t CAM_OPERATION_DONE = ( 1UL << 1UL );
+
+// RTC variable declaration (retained during deep sleep)
 RTC_DATA_ATTR struct timeval sleep_enter_time;
 RTC_DATA_ATTR bool DayOperation;
 RTC_DATA_ATTR bool NightOperation;
 
+// CAM configuration
 camera_config_t camera_config = {
     .pin_pwdn  = CAM_PIN_PWDN,
     .pin_reset = CAM_PIN_RESET,
@@ -84,6 +87,7 @@ camera_config_t camera_config = {
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY // Sets when buffers should be filled
 };
 
+// Initialize the CAM
 esp_err_t init_camera(void)
 {
     // Turn on the CAM
@@ -104,6 +108,7 @@ esp_err_t init_camera(void)
     return ESP_OK;
 }
 
+// Deep sleep handler, there is no return from this function. SoC reset is imposed at wakeup
 void GotoDeepSleep (uint64_t sleepTime) {
     // Turn off the CAM
     gpio_set_level(CAM_PIN_PWDN, 1);
@@ -128,10 +133,10 @@ void GotoDeepSleep (uint64_t sleepTime) {
     // We will never arrive here!!! Reset is enforced after deep sleep
 }
 
-/* Night time operations:                                                     */
-/* When in day operation and light level are below limit; sleep for 8 hours   */
-/* After 8 hours, measure light level - if above limit; resume day operations */
-/*                                    - if below limit; deep sleep 1 hour     */
+/* Night time operations:                                                                 */
+/* When in day operation and light level is below limit; sleep for 8 hours                */
+/* After 8 hours, measure light level - if above limit; resume day operations             */
+/*                                    - if below limit; deep sleep 1 hour and test again  */
 void NightTimeOperation (void) {
     sensor_t *s;
     int lightNight = 0;
@@ -189,6 +194,7 @@ void NightTimeOperation (void) {
     }
 }
 
+// Helper function for CAM configuration (NOT USED pt.)
 void SetLight(void){
     sensor_t * s = esp_camera_sensor_get();
 
@@ -224,6 +230,10 @@ void SetLight(void){
   s->set_wpc(s, 1);  
 }
 
+// The actual "take picture" camera function (Day mode).
+// Every time a picture is taken the light level is tested in order to enter Night mode.
+// Pictures taken are saved on the SD card together with light levels, actual sleep time
+// and a timestamp (in the Light.txt file)
 void take_photo(void)
 {
     sensor_t *s;
@@ -258,12 +268,14 @@ void take_photo(void)
         ESP_LOGE(TAG, "No valid frame taken or file creation failed");
     }
 
+    // The task sync.'s are not used in this single threaded application (left for historical reasons)
     xEventGroupWaitBits(xEventGroup, (SD_OPERATION_DONE), pdTRUE, pdTRUE, portMAX_DELAY);
     ESP_LOGI(TAG, "Finished Taking Picture!");
 
     // Free the jpeg frame buffer
     esp_camera_fb_return(pic);
 
+    // The task sync.'s are not used in this single threaded application (left for historical reasons)
     xEventGroupSetBits(xEventGroup, CAM_OPERATION_DONE);
 
     // All done, go to deep sleep
