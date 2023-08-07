@@ -122,7 +122,7 @@ esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem) {
     initi_sd_card();
 
     if (pic != NULL) {
-        // Initialize the 'num' counter in case it was a SoC reset
+        // Initialize the 'num' counter in case there was a SoC reset
         if (WakeUpCause != ESP_SLEEP_WAKEUP_TIMER) {
             num = NumFilesOnSDcard();
             ESP_LOGI(TAG, "Number of files found on the SD card: %lld", num);
@@ -158,7 +158,7 @@ esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem) {
             ESP_LOGE(TAG, "Light.txt --> fopen failed!!");
         }
         else
-        {   // Save the lighting information of this picture frame
+        {   // Save the lighting information of this picture frame and the remark
             fprintf(file, "Pic #: %lld Light: %d %s\n", num, light1, rem);
             fflush(file);
             fclose(file);
@@ -173,13 +173,14 @@ esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem) {
                 ESP_LOGE(TAG, "Light.txt --> fopen failed!!");
             }
             else
-            {   // Save the lighting information of this picture frame
+            {   // Save the remark
                 fprintf(file, "%s\n", rem);
                 fflush(file);
                 fclose(file);
             }
         }
     }
+    
     // Dismount the SD card and power down the SPI bus
     esp_vfs_fat_sdcard_unmount(VOLUME_NAME, card);
     spi_bus_free(host.slot);
