@@ -115,51 +115,71 @@ u_int64_t NumFilesOnSDcard(void) {
 }
 
 /* Save the picture frame and it's ligthing information to the SD card */
-esp_err_t SavePic(const camera_fb_t *pic, int light1, int light2) {
-    char photo_name[50];
+esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem) {
+    char photo_name[50] = "";
+    FILE *file = NULL;
 
     initi_sd_card();
-    // Initialize the 'num' counter in case it was a SoC reset
-    if (WakeUpCause != ESP_SLEEP_WAKEUP_TIMER) {
-        num = NumFilesOnSDcard();
-    }
 
-    // Create the new picture file name
-    num++;
-    sprintf(photo_name, "%s/%lld.jpg", VOLUME_NAME, num);
+    if (pic != NULL) {
+        // Initialize the 'num' counter in case it was a SoC reset
+        if (WakeUpCause != ESP_SLEEP_WAKEUP_TIMER) {
+            num = NumFilesOnSDcard();
+            ESP_LOGI(TAG, "Number of files found on the SD card: %lld", num);
+        }
 
-    // Open the jpeg picture file
-    FILE *file = fopen(photo_name, "w");
-    if (file == NULL)
-    {
-        ESP_LOGE(TAG, "fopen failed!!");
-    }
-    else
-    {   // Save the picture frame and close the file
-        if ((pic->buf != NULL) && (pic->len != 0)) {
-            fwrite(pic->buf, 1, pic->len, file);
+        // Create the new picture file name
+        num++;
+        sprintf(photo_name, "%s/%lld.jpg", VOLUME_NAME, num);
+
+        // Open the jpeg picture file
+        file = fopen(photo_name, "w");
+        if (file == NULL)
+        {
+            ESP_LOGE(TAG, "fopen failed!!");
+        }
+        else
+        {   // Save the picture frame and close the file
+            if ((pic->buf != NULL) && (pic->len != 0)) {
+                fwrite(pic->buf, 1, pic->len, file);
+                fflush(file);
+            }
+            else {
+                ESP_LOGE(TAG, "Pic buffer NULL pointer or buffer length = 0: %d", pic->len);
+            }
+
+            fclose(file);
+        }
+
+        // Log the the lighting information and comment of this picture
+        file = fopen("/sdcard/Light.txt", "a");
+        if (file == NULL)
+        {
+            ESP_LOGE(TAG, "Light.txt --> fopen failed!!");
+        }
+        else
+        {   // Save the lighting information of this picture frame
+            fprintf(file, "Pic #: %lld Light: %d Sleep Time: %s\n", num, light1, rem);
             fflush(file);
+            fclose(file);
         }
-        else {
-            ESP_LOGE(TAG, "Pic buffer NULL pointer or buffer length = 0: %d", pic->len);
+    }
+    else {
+        if (rem != NULL) {
+            // Log the the comment
+            file = fopen("/sdcard/Light.txt", "a");
+            if (file == NULL)
+            {
+                ESP_LOGE(TAG, "Light.txt --> fopen failed!!");
+            }
+            else
+            {   // Save the lighting information of this picture frame
+                fprintf(file, "%s\n", rem);
+                fflush(file);
+                fclose(file);
+            }
         }
-
-        fclose(file);
     }
-
-    // Log the the lighting information of this picture
-    file = fopen("/sdcard/Light.txt", "a");
-    if (file == NULL)
-    {
-        ESP_LOGE(TAG, "Light.txt --> fopen failed!!");
-    }
-    else
-    {   // Save the lighting information of this picture frame
-        fprintf(file, "Pic #: %lld Light: 0x%02x 0x%02x\n", num, light1, light2);
-        fflush(file);
-        fclose(file);
-    }
-
     // Dismount the SD card and power down the SPI bus
     esp_vfs_fat_sdcard_unmount(VOLUME_NAME, card);
     spi_bus_free(host.slot);

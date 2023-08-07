@@ -35,13 +35,14 @@ const int16_t CAM_PIN_PWDN = 32;
 #define CONFIG_XCLK_FREQ 20000000
 #define NIGHT_LEVEL 25
 
-extern esp_err_t SavePic(const camera_fb_t *pic, int light1, int light2);
+extern esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem);
 extern EventGroupHandle_t xEventGroup;
 extern const uint32_t SD_OPERATION_DONE;
 extern u_int64_t NumFilesOnSDcard(void);
 extern esp_sleep_source_t WakeUpCause;
+extern uint64_t sleep_time_sec;
+extern struct timeval now;
 
-u_int64_t sleep_time_sec;
 const u_int64_t DEEP_SLEEP_8_HOUR = ((uint64_t) 8 * 60 * 60 * 1000000);
 const u_int64_t DEEP_SLEEP_1_HOUR = ((uint64_t) 1 * 60 * 60 * 1000000);
 //const u_int64_t DEEP_SLEEP_8_HOUR = ((uint64_t) 8 * 1000000);
@@ -119,8 +120,9 @@ void GotoDeepSleep (uint64_t sleepTime) {
     rtc_gpio_isolate(GPIO_NUM_12);
     rtc_gpio_isolate(GPIO_NUM_4);
 
-    // Load deep sleep timer and enter deep sleep
+    // Load deep sleep timer, save current time and enter deep sleep
     esp_sleep_enable_timer_wakeup(sleepTime);
+    gettimeofday(&sleep_enter_time, NULL);
     esp_deep_sleep_start(); 
 
     // We will never arrive here!!! Reset is enforced after deep sleep
@@ -133,6 +135,7 @@ void GotoDeepSleep (uint64_t sleepTime) {
 void NightTimeOperation (void) {
     sensor_t *s;
     int lightNight = 0;
+    char timenow[100] = "";
 
     if (DayOperation) {
         return;
@@ -155,6 +158,8 @@ void NightTimeOperation (void) {
                 // Lights is good; resume day operation
                 DayOperation = true;
                 NightOperation = false;
+                sprintf(timenow, "Entering Day OPS (DEEP_SLEEP_15_MIN) Sleep: [%lld] Time: %lld", sleep_time_sec, now.tv_sec);
+                SavePic(NULL, 0, timenow);
                 ESP_LOGI(TAG, "Entering Day OPS");
                 GotoDeepSleep (SLEEP_TIME_IN_USEC);
 
@@ -162,6 +167,8 @@ void NightTimeOperation (void) {
             }
             else {
                 // Lights is bad; lets wait an hour
+                sprintf(timenow, "Entering 1 hours Night OPS (DEEP_SLEEP_1_HOUR) Sleep: [%lld] Time: %lld", sleep_time_sec, now.tv_sec);
+                SavePic(NULL, 0, timenow);
                 ESP_LOGI(TAG, "Entering 1 hours Night OPS");
                 GotoDeepSleep (DEEP_SLEEP_1_HOUR);
                 
@@ -171,8 +178,10 @@ void NightTimeOperation (void) {
         }
         else {
             // Just ended day operations
-            ESP_LOGI(TAG, "Entering Night OPS");
             NightOperation = true;
+            sprintf(timenow, "Entering Night OPS (DEEP_SLEEP_8_HOUR) Sleep: [%lld] Time: %lld", sleep_time_sec, now.tv_sec);
+            SavePic(NULL, 0, timenow);
+            ESP_LOGI(TAG, "Entering Night OPS");
             GotoDeepSleep (DEEP_SLEEP_8_HOUR);
 
             // We will never arrive here!!! Reset is enforced after deep sleep
@@ -217,47 +226,47 @@ void SetLight(void){
 
 void take_photo(void)
 {
-    struct timeval now;
     sensor_t *s;
+    char sTsleep[100] = "";
 
-    rtc_gpio_force_hold_dis_all();
-
+    // Check the CAM's Night state operations
     NightTimeOperation();
 
     ESP_LOGI(TAG, "Starting Taking Picture!");
-    gettimeofday(&now, NULL);
-    u_int64_t sleep_time_sec = now.tv_sec - sleep_enter_time.tv_sec;
-    ESP_LOGI(TAG, "Wake up from: %d, Time spent in deep sleep: %lld Sec", esp_sleep_get_wakeup_cause(), sleep_time_sec);
-    gettimeofday(&sleep_enter_time, NULL);
 
     init_camera();
     camera_fb_t *pic = esp_camera_fb_get();
 
-    //Since we got the frame buffer, we reset the sensor and put it to sleep while saving the file
+    // Since we now got the frame, get the light information and reset the CAM sensor
     s = esp_camera_sensor_get();
     // Get the light in this shoot
     int light = s->get_reg(s, 0x56A1, 0xff);
-    int light2 = s->get_reg(s, 0x56A2, 0xff);
-    ESP_LOGI(TAG, "Light level: 0x%02x 0x%02x", light, light2);
+    ESP_LOGI(TAG, "Light level: 0x%02x", light);
+    // Is Day operations done for today
     if (light < NIGHT_LEVEL) {
         DayOperation = false;
     }
-    // Reset the OV5640 sensor
+    // Reset the OV5640 sensor (makes pictures consistent, apparently)
     s->set_reg(s, 0x3008, 0xff, 0x80);
-    // Turn off the CAM
+    vTaskDelay(pdMS_TO_TICKS(10));
+   // Turn off the CAM
     gpio_set_level(CAM_PIN_PWDN, 1);
 
-    if (SavePic(pic, light, light2) == ESP_FAIL) {
+    // Save the jpeg frame on the SD card
+    sprintf(sTsleep, "Sleep: [%lld] Time: %lld", sleep_time_sec, now.tv_sec);
+    if (SavePic(pic, light, sTsleep) == ESP_FAIL) {
         ESP_LOGE(TAG, "No valid frame taken or file creation failed");
     }
 
     xEventGroupWaitBits(xEventGroup, (SD_OPERATION_DONE), pdTRUE, pdTRUE, portMAX_DELAY);
-
     ESP_LOGI(TAG, "Finished Taking Picture!");
-    // Free the frame buffer
+
+    // Free the jpeg frame buffer
     esp_camera_fb_return(pic);
+
     xEventGroupSetBits(xEventGroup, CAM_OPERATION_DONE);
 
+    // All done, go to deep sleep
     GotoDeepSleep (SLEEP_TIME_IN_USEC);
 
     // We will never arrive here!!! Reset is enforced after deep sleep
