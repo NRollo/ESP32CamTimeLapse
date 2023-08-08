@@ -3,7 +3,7 @@ HW modifications has been made to insure < 1mA operation. Pictures (jpeg) are sa
 night pictures and stay in deep sleep during night time. The camera used is the ESP32Cam supported OV5640 (5 megapixel). The system was designed to be able to operate autonomously
 for 3 - 4 month on a construction site with pictures taken every 15 min. during the day time.
 # HW modifications
-(See HW folder for reference)
+(See HW folder for reference) 
 The 3.3V power supply for the CAM module has been moved from the Q2 source to the drain in order to power off the CAM module during deep sleep. Also a new battery power supply
 has been added consisting of a AA backup battery for deep sleep use and a solar charged powerbank to handle peak consumption during normal operation (see seperate schematic).
 The system uses ~600 uA in deep sleep which could be reduced even more if also the SD card and the PSRAM was powered down the same way as the CAM module (Q2 drain), shown with
