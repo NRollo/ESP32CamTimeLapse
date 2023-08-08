@@ -1,7 +1,7 @@
 # ESP32Cam Time-Lapse camera
-HW modifications has been made to insure < 1mA operation. Pictures (jpeg) are saved on the SD card, Day and Night deep sleep operation implemented in order to filter out useless
-night pictures and stay in deep sleep during night time. The camera used is the ESP32Cam supported OV5640 (5 megapixel). The system was designed to be able to operate autonomously
-for 3 - 4 month on a construction site with pictures taken every 15 min. during the day time.
+Pictures (jpeg) are saved on the SD card, Day and Night deep sleep operation implemented in order to filter out useless night pictures and stay in deep sleep during night
+time. The camera used is the ESP32Cam supported OV5640 (5 megapixel). The system was designed to be able to operate autonomously for 3 - 4 month on a construction site
+with pictures taken every 15 min. during the day time. HW modifications has been made to insure < 1 mA operation. 
 # HW modifications
 (See HW folder for reference)
 The 3.3V power supply for the CAM module has been moved from the Q2 source to the drain in order to power off the CAM module during deep sleep. the CAM module is quite power
