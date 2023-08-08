@@ -18,5 +18,5 @@ A few variables are keept in the RTC memory in order to stay valid during deep s
 take (OV5640 reg. 0x56A1) is used and compared to a defined 'NIGHT_LEVEL'. This will trigger night mode and the system will enter 8 hours of deep sleep, when waking up the light
 level will be tested again and a 1 hour deep sleep will be used if it is still too dark for taking pictures.
 Pictures are stored on the SD card together with som log information about the pictures average light level, sleep time, timestamp and remarks like "Entering 8 hours deep sleep".
-This has primarely been used for debugging and tuning. 
+This has primarily been used for debugging and tuning. 
 
