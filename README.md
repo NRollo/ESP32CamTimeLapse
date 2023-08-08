@@ -13,7 +13,7 @@ powerbank which (by it self) shuts down after ~30 Sec. when load drops below ~10
 quiescent current type MCP1702-33, reducing quiescent current in the LDO from ~5 mA to ~3 uA. The CAM_PWR signal is now also routed to the PWDN pin of the CAM module, in order
 to have a more controled power down sequence.
 # SW
-No task creation is made in the application which runs on a single thread. The program flow is: boot --> execution --> deep sleep --> boot --> etc.
+No task creation is made in the application which runs on a single thread. The program flow is: boot --> execution --> deep_sleep --> boot --> execution --> etc.
 A few variables are keept in the RTC memory in order to stay valid during deep sleep and boot. To distinguish between day and night mode the average light level from the picture
 take (OV5640 reg. 0x56A1) is used and compared to a defined 'NIGHT_LEVEL'. This will trigger night mode and the system will enter 8 hours of deep sleep, when waking up the light
 level will be tested again and a 1 hour deep sleep will be used if it is still too dark for taking pictures.
