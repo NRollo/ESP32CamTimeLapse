@@ -158,13 +158,14 @@ esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem) {
             ESP_LOGE(TAG, "Light.txt --> fopen failed!!");
         }
         else
-        {   // Save the lighting information of this picture frame and the remark
+        {   // Save the lighting information of this picture frame and any comments
             fprintf(file, "Pic #: %lld Light: %d %s\n", num, light1, rem);
             fflush(file);
             fclose(file);
         }
     }
     else {
+        // Anything information to log in the txt file
         if (rem != NULL) {
             // Log the the comment
             file = fopen("/sdcard/Light.txt", "a");

@@ -50,7 +50,7 @@ const u_int64_t DEEP_SLEEP_8_HOUR = ((uint64_t) 8 * 60 * 60 * 1000000);
 const u_int64_t DEEP_SLEEP_1_HOUR = ((uint64_t) 1 * 60 * 60 * 1000000);
 // 15 min. deep sleep in uS
 const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 15 * 60 * 1000000);
-//const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 15 * 1000000);
+//const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 40 * 1000000);
 // CAM event bit
 const uint32_t CAM_OPERATION_DONE = ( 1UL << 1UL );
 
@@ -246,24 +246,27 @@ void take_photo(void)
     ESP_LOGI(TAG, "Starting Taking Picture!");
 
     init_camera();
+    // Get picture frame
     camera_fb_t *pic = esp_camera_fb_get();
 
     // Since we now got the frame, get the light information and reset the CAM sensor
     s = esp_camera_sensor_get();
-    // Get the light in this shoot
+    // Get the light level in this shoot
     int light = s->get_reg(s, 0x56A1, 0xff);
     ESP_LOGI(TAG, "Light level: 0x%02x", light);
+
     // Is Day operations done for today
     if (light < NIGHT_LEVEL) {
         DayOperation = false;
     }
-    // Reset the OV5640 sensor (makes pictures consistent, apparently)
+    // Reset the OV5640 sensor (makes pictures consistent, apparently... don't know why??)
     s->set_reg(s, 0x3008, 0xff, 0x80);
     vTaskDelay(pdMS_TO_TICKS(10));
+
    // Turn off the CAM
     gpio_set_level(CAM_PIN_PWDN, 1);
 
-    // Save the jpeg frame on the SD card
+    // Save the jpeg frame on the SD card as well as the last time in deep sleep and a tiemstamp
     sprintf(sTsleep, "Sleep: [%lld] Time: %lld", sleep_time_sec, now.tv_sec);
     if (SavePic(pic, light, sTsleep) == ESP_FAIL) {
         ESP_LOGE(TAG, "No valid frame taken or file creation failed");
@@ -271,16 +274,15 @@ void take_photo(void)
 
     // The task sync.'s are not used in this single threaded application (left for historical reasons)
     xEventGroupWaitBits(xEventGroup, (SD_OPERATION_DONE), pdTRUE, pdTRUE, portMAX_DELAY);
-    ESP_LOGI(TAG, "Finished Taking Picture!");
-
     // Free the jpeg frame buffer
     esp_camera_fb_return(pic);
 
+    ESP_LOGI(TAG, "Finished Taking Picture!");
     // The task sync.'s are not used in this single threaded application (left for historical reasons)
     xEventGroupSetBits(xEventGroup, CAM_OPERATION_DONE);
 
     // All done, go to deep sleep
-    GotoDeepSleep (SLEEP_TIME_IN_USEC);
+    GotoDeepSleep(SLEEP_TIME_IN_USEC);
 
     // We will never arrive here!!! Reset is enforced after deep sleep
 }

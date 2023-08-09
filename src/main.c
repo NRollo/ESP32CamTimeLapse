@@ -15,6 +15,9 @@
 #include "soc/timer_group_reg.h"
 #include <rom/ets_sys.h>
 
+// Date 01-08-2023 as EPOC Sec.
+#define DATE_01_08_2023_AS_EPOC 1690848000
+
 static const char *TAG = "Main";
 
 
@@ -71,7 +74,7 @@ EventGroupHandle_t xEventGroup = NULL;
 uint64_t sleep_time_sec;
 struct timeval now;
 
-// Right after deep sleep, wakeup the powerbank by applying
+// Deep sleep wakeup (pre-boot), wakeup the powerbank by applying
 // a 150 mS load pulse
 void RTC_IRAM_ATTR esp_wake_deep_sleep(void) {
     // Initalize the timing parameters
@@ -87,7 +90,7 @@ void RTC_IRAM_ATTR esp_wake_deep_sleep(void) {
     // Ouput - set the GPIO output high
     REG_WRITE(RTC_GPIO_OUT_W1TS_REG, BIT(RTC_GPIO_OUT_DATA_W1TS_S + GPIO_NUM_8));
     // 150 mS pulse
-    ets_delay_us(150000);
+    ets_delay_us(160000);
     // Ouput - clear the GPIO output
     REG_WRITE(RTC_GPIO_OUT_W1TC_REG, BIT(RTC_GPIO_OUT_DATA_W1TS_S + GPIO_NUM_8));
 }
@@ -114,12 +117,12 @@ void app_main()
         sprintf(text, "SoC reset: %s @[%lld] Time: %lld", cause, sleep_enter_time.tv_sec, now.tv_sec);
         SavePic(NULL, 0, text);
 
-        // Restart watch from 01-08-2023 (EPOC = 1690848000 sec.)
-        sleep_enter_time.tv_sec = 1690848000;
+        // Restart system time
+        sleep_enter_time.tv_sec = DATE_01_08_2023_AS_EPOC;
         sleep_enter_time.tv_usec = 0;
         settimeofday(&sleep_enter_time, NULL);
 
-        // Initialize DAy/Night operation status
+        // Initialize Day/Night operation status
         DayOperation = true;
         NightOperation = false;
     }
