@@ -16,6 +16,13 @@
         "rtc_io_types.h": "c",
         "ov5640.h": "c",
         "sccb.h": "c",
-        "event_groups.h": "c"
+        "event_groups.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "rtc_io_reg.h": "c",
+        "soc.h": "c",
+        "reg_base.h": "c",
+        "timer_group_reg.h": "c"
     }
 }

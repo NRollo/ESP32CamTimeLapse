@@ -10,6 +10,10 @@
 #include "driver/private_include/xclk.h"
 #include "string.h"
 #include "driver/rtc_io.h"
+#include "soc/rtc_io_reg.h"
+#include "soc/soc.h"
+#include "soc/timer_group_reg.h"
+#include <rom/ets_sys.h>
 
 static const char *TAG = "Main";
 
@@ -67,30 +71,33 @@ EventGroupHandle_t xEventGroup = NULL;
 uint64_t sleep_time_sec;
 struct timeval now;
 
-/*
+// Right after deep sleep, wakeup the powerbank by applying
+// a 150 mS load pulse
 void RTC_IRAM_ATTR esp_wake_deep_sleep(void) {
-    esp_default_wake_deep_sleep();
-    gpio_set_direction(GPIO_NUM_33, GPIO_MODE_OUTPUT);
+    // Initalize the timing parameters
+    ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1000000);
 
-    GPIO.out1_w1ts.val = ((uint32_t)1 << 1);
-    gpio_set_level(GPIO_NUM_33, 1);
+    // Output - set RTC mux
+    SET_PERI_REG_MASK(RTC_IO_XTAL_32K_PAD_REG, BIT(RTC_IO_X32N_MUX_SEL_S));
+    // Output - clear the HOLD bit
+    CLEAR_PERI_REG_MASK(RTC_IO_XTAL_32K_PAD_REG, BIT(RTC_IO_X32N_HOLD_S));
+    // Output - enable GPIO output
+    REG_WRITE(RTC_GPIO_ENABLE_W1TS_REG, BIT(RTC_GPIO_ENABLE_W1TS_S + GPIO_NUM_8));
+ 
+    // Ouput - set the GPIO output high
+    REG_WRITE(RTC_GPIO_OUT_W1TS_REG, BIT(RTC_GPIO_OUT_DATA_W1TS_S + GPIO_NUM_8));
+    // 150 mS pulse
+    ets_delay_us(150000);
+    // Ouput - clear the GPIO output
+    REG_WRITE(RTC_GPIO_OUT_W1TC_REG, BIT(RTC_GPIO_OUT_DATA_W1TS_S + GPIO_NUM_8));
 }
-*/
 
 void app_main()
 {
     //esp_log_level_set("*", ESP_LOG_WARN);
 
-    // Wakeup the powerbank (load the powerbank with ~100 mA)
-    gpio_set_direction(GPIO_NUM_33, GPIO_MODE_OUTPUT);
-    gpio_set_level(GPIO_NUM_33, 1);
-
     // Timestamp after deep sleep wakeup
     gettimeofday(&now, NULL);
-
-    // Remove the load from the powerbank after ~150 mS
-    vTaskDelay(pdMS_TO_TICKS(150));
-    gpio_set_level(GPIO_NUM_33, 0);
 
     WakeUpCause = esp_sleep_get_wakeup_cause();
     configASSERT(xEventGroup = xEventGroupCreate());

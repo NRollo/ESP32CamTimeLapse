@@ -50,6 +50,7 @@ const u_int64_t DEEP_SLEEP_8_HOUR = ((uint64_t) 8 * 60 * 60 * 1000000);
 const u_int64_t DEEP_SLEEP_1_HOUR = ((uint64_t) 1 * 60 * 60 * 1000000);
 // 15 min. deep sleep in uS
 const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 15 * 60 * 1000000);
+//const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 15 * 1000000);
 // CAM event bit
 const uint32_t CAM_OPERATION_DONE = ( 1UL << 1UL );
 
