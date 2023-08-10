@@ -175,7 +175,7 @@ esp_err_t SavePic(const camera_fb_t *pic, int light1, char *rem) {
             }
             else
             {   // Save the remark
-                fprintf(file, "%s\n", rem);
+                fprintf(file, "No picture frame --> %s\n", rem);
                 fflush(file);
                 fclose(file);
             }
