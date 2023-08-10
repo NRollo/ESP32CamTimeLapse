@@ -8,7 +8,7 @@ The 3.3V power supply for the CAM module has been moved from the Q2 source to th
 hungry and can produce peak current of +150 mA. A battery power supply has been added consisting of a AA backup battery for deep sleep use and a solar charged powerbank to
 handle peak consumption during normal operation (see seperate schematic).
 The system uses ~600 uA in deep sleep which could be reduced even more if also the SD card and the PSRAM was powered down the same way as the CAM module (Q2 drain controlled
-by GPIO32) as shown with the dotted lines in the schematic (the SD card alone uses ~300 uA in standby). The flash LED has been disconnected and the 'LED' (GPIO33) digital
+by GPIO32) as shown with the dotted lines in the schematic (the SD card alone seems to uses ~300 uA in standby). The flash LED has been disconnected and the 'LED' (GPIO33) digital
 output is used to wakeup the powerbank which (by it self) shuts down after ~30 Sec. when load drops below ~100 mA, during deep sleep. The 5V to 3.3V LDO (U2) has been changed
 from the AMS1117 to the low quiescent current type MCP1702-33, reducing quiescent current in the LDO from ~5 mA to ~3 uA. The CAM_PWR signal is now also routed to the PWDN
 pin of the CAM module, in order to have a more controled power down sequence.
