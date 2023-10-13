@@ -48,8 +48,8 @@ extern struct timeval now;
 const u_int64_t DEEP_SLEEP_8_HOUR = ((uint64_t) 8 * 60 * 60 * 1000000);
 // 1 hour deep sleep in uS
 const u_int64_t DEEP_SLEEP_1_HOUR = ((uint64_t) 1 * 60 * 60 * 1000000);
-// 15 min. deep sleep in uS
-const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 15 * 60 * 1000000);
+// 5 min. deep sleep in uS
+const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 5 * 60 * 1000000);
 //const u_int64_t SLEEP_TIME_IN_USEC = ((uint64_t) 40 * 1000000);
 // CAM event bit
 const uint32_t CAM_OPERATION_DONE = ( 1UL << 1UL );
@@ -266,7 +266,7 @@ void take_photo(void)
    // Turn off the CAM
     gpio_set_level(CAM_PIN_PWDN, 1);
 
-    // Save the jpeg frame on the SD card as well as the last time in deep sleep and a tiemstamp
+    // Save the jpeg frame on the SD card as well as the last time in deep sleep and a timestamp
     sprintf(sTsleep, "Sleep: [%lld] Time: %lld", sleep_time_sec, now.tv_sec);
     if (SavePic(pic, light, sTsleep) == ESP_FAIL) {
         ESP_LOGE(TAG, "No valid frame taken or file creation failed");
